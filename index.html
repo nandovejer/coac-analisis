@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestor y dashboard de comparsas</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #fff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --primary: #7c3aed;
+      --primary-soft: #ede9fe;
+      --success: #059669;
+      --danger: #dc2626;
+      --shadow: 0 10px 30px rgba(0, 0, 0, .08);
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #f8f5ff 0%, var(--bg) 100%);
+      color: var(--text)
+    }
+
+    .container {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 24px
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 20px;
+      line-height: 1.5
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px
+    }
+
+    .tab-btn {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary)
+    }
+
+    .tab-panel {
+      display: none
+    }
+
+    .tab-panel.active {
+      display: block
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+      align-items: start
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid #ebeef3;
+      border-radius: 18px;
+      box-shadow: var(--shadow)
+    }
+
+    .form-card {
+      padding: 20px;
+      position: sticky;
+      top: 18px
+    }
+
+    .card-title {
+      font-size: 20px;
+      margin: 0 0 6px
+    }
+
+    .card-text {
+      font-size: 14px;
+      color: var(--muted);
+      margin: 0 0 18px;
+      line-height: 1.5
+    }
+
+    .grid {
+      display: grid;
+      gap: 12px
+    }
+
+    .grid.two {
+      grid-template-columns: 1fr 1fr
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 6px
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #fff;
+      font-size: 14px;
+      color: var(--text);
+      outline: none
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, .12)
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .15s ease, opacity .15s ease
+    }
+
+    button:hover {
+      transform: translateY(-1px)
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      flex: 1;
+      min-width: 120px
+    }
+
+    .btn-secondary {
+      background: #eef2ff;
+      color: #312e81;
+      flex: 1;
+      min-width: 120px
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      color: #991b1b;
+      width: 100%
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 16px 18px;
+      border-bottom: 1px solid #edf0f4
+    }
+
+    .toolbar-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 75vh;
+      border-radius: 0 0 18px 18px
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1380px;
+      background: #fff
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #f3e8ff;
+      color: #4c1d95;
+      font-size: 13px;
+      text-align: left;
+      padding: 12px;
+      border-bottom: 1px solid #ddd6fe;
+      white-space: nowrap
+    }
+
+    tbody td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #eef2f7;
+      vertical-align: middle;
+      background: #fff
+    }
+
+    tbody tr:hover td {
+      background: #faf7ff
+    }
+
+    tbody tr.selected td {
+      background: #f3e8ff
+    }
+
+    .comparsa-name {
+      font-weight: 700;
+      min-width: 220px
+    }
+
+    .mini-select {
+      min-width: 160px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 13px
+    }
+
+    .mini-year {
+      min-width: 100px
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 8px
+    }
+
+    .icon-btn {
+      padding: 8px 10px;
+      font-size: 12px;
+      border-radius: 10px;
+      background: #f3f4f6;
+      color: #111827
+    }
+
+    .danger-soft {
+      background: #fee2e2;
+      color: #991b1b
+    }
+
+    .status {
+      font-size: 13px;
+      color: var(--success);
+      margin-top: 10px;
+      min-height: 18px
+    }
+
+    .stats {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 14px
+    }
+
+    .stat {
+      background: var(--primary-soft);
+      color: #4c1d95;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 700
+    }
+
+    .helper {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-top: 12px
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px
+    }
+
+    .kpi {
+      padding: 16px;
+      border-radius: 16px;
+      background: #fff;
+      border: 1px solid #ebeef3;
+      box-shadow: var(--shadow)
+    }
+
+    .kpi .label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px
+    }
+
+    .kpi .value {
+      font-size: 28px;
+      font-weight: 800;
+      color: #4c1d95
+    }
+
+    .chart-card {
+      padding: 18px
+    }
+
+    .chart-wrap {
+      height: 320px
+    }
+
+    .insights {
+      padding: 18px
+    }
+
+    .insights ul {
+      margin: 10px 0 0;
+      padding-left: 18px
+    }
+
+    .muted {
+      color: var(--muted)
+    }
+
+    .full-span {
+      grid-column: 1 / -1
+    }
+
+    .dropzone {
+      padding: 12px;
+      border: 1px dashed #c4b5fd;
+      background: #faf5ff;
+      border-radius: 14px;
+      color: #5b21b6;
+      font-size: 13px
+    }
+
+    @media (max-width:1200px) {
+
+      .dashboard-grid,
+      .kpi-grid {
+        grid-template-columns: 1fr 1fr
+      }
+    }
+
+    @media (max-width:1050px) {
+      .layout {
+        grid-template-columns: 1fr
+      }
+
+      .form-card {
+        position: static
+      }
+    }
+
+    @media (max-width:700px) {
+
+      .dashboard-grid,
+      .kpi-grid {
+        grid-template-columns: 1fr
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Gestor y dashboard de comparsas</h1>
+    <p class="subtitle">Importa CSV o Excel, incluso libros con varias hojas por año como tu estudio estadístico. El
+      importador detecta automáticamente la tabla útil y descarta los bloques de resumen internos.</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="datos">Datos</button>
+      <button class="tab-btn" data-tab="dashboard">Dashboard</button>
+    </div>
+
+    <section id="tab-datos" class="tab-panel active">
+      <div class="layout">
+        <section class="card form-card">
+          <h2 class="card-title">Formulario</h2>
+          <p class="card-text">La tabla empieza vacía. Puedes añadir filas manualmente o importar un archivo para
+            autorrellenarla.</p>
+
+          <div class="dropzone">
+            <strong>Importar archivo</strong><br />
+            Admite CSV, XLSX o XLS. Soporta tanto una tabla simple como libros con varias hojas tipo “COMPARSAS 2022”,
+            “COMPARSAS 2023”, etc.
+            <div style="margin-top:10px">
+              <input id="fileInput" type="file" accept=".csv,.xlsx,.xls" />
+            </div>
+          </div>
+
+          <form id="comparsaForm" class="grid" style="margin-top:16px">
+            <div>
+              <label for="comparsa">Comparsa</label>
+              <input id="comparsa" type="text" placeholder="Ej. Los humanos" required />
+            </div>
+
+            <div>
+              <label for="year">Año</label>
+              <input id="year" type="number" min="1900" max="2100" placeholder="Ej. 2026" />
+            </div>
+
+            <div class="grid two">
+              <div><label for="preliminar1">Preliminar 1</label><select id="preliminar1"></select></div>
+              <div><label for="preliminar2">Preliminar 2</label><select id="preliminar2"></select></div>
+              <div><label for="cuartos1">Cuartos 1</label><select id="cuartos1"></select></div>
+              <div><label for="cuartos2">Cuartos 2</label><select id="cuartos2"></select></div>
+              <div><label for="semifinal1">Semifinal 1</label><select id="semifinal1"></select></div>
+              <div><label for="semifinal2">Semifinal 2</label><select id="semifinal2"></select></div>
+              <div><label for="final1">Final 1</label><select id="final1"></select></div>
+              <div><label for="final2">Final 2</label><select id="final2"></select></div>
+            </div>
+
+            <div class="actions">
+              <button type="submit" class="btn-primary">Guardar</button>
+              <button type="button" id="newBtn" class="btn-secondary">Nuevo / Limpiar</button>
+              <button type="button" id="exportBtn" class="btn-secondary">Exportar CSV</button>
+            </div>
+
+            <button type="button" id="resetStorageBtn" class="btn-danger">Borrar datos guardados</button>
+            <div id="status" class="status"></div>
+          </form>
+
+          <div class="stats">
+            <div class="stat">Filas: <span id="totalRows">0</span></div>
+            <div class="stat">Con final: <span id="finalists">0</span></div>
+          </div>
+
+          <p class="helper">También puedes editar cada fase directamente desde la tabla. Cada cambio se guarda
+            automáticamente en localStorage.</p>
+        </section>
+
+        <section class="card">
+          <div class="toolbar">
+            <div class="toolbar-group">
+              <input id="searchInput" type="text" placeholder="Buscar comparsa..." style="min-width:240px" />
+            </div>
+            <div class="toolbar-group">
+              <button type="button" id="clearTableBtn" class="btn-secondary">Vaciar tabla</button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Año</th>
+                  <th>COMPARSAS</th>
+                  <th>Preliminar 1</th>
+                  <th>Preliminar 2</th>
+                  <th>Cuartos 1</th>
+                  <th>Cuartos 2</th>
+                  <th>Semifinal 1</th>
+                  <th>Semifinal 2</th>
+                  <th>Final 1</th>
+                  <th>Final 2</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section id="tab-dashboard" class="tab-panel">
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="label">Comparsas</div>
+          <div class="value" id="kpiRows">0</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Registros totales de fase</div>
+          <div class="value" id="kpiEntries">0</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Comparsas con final</div>
+          <div class="value" id="kpiFinalists">0</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Años detectados</div>
+          <div class="value" id="kpiYears">0</div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <section class="card chart-card">
+          <h3 class="card-title">Distribución discursiva</h3>
+          <p class="card-text">Frecuencia total de las modalidades en todas las fases.</p>
+          <div class="chart-wrap"><canvas id="chartModes"></canvas></div>
+        </section>
+
+        <section class="card chart-card">
+          <h3 class="card-title">Cobertura por fase</h3>
+          <p class="card-text">Cuántas comparsas tienen información en cada etapa.</p>
+          <div class="chart-wrap"><canvas id="chartStages"></canvas></div>
+        </section>
+
+        <section class="card chart-card">
+          <h3 class="card-title">Avance máximo por comparsa</h3>
+          <p class="card-text">Distribución según la fase más alta alcanzada.</p>
+          <div class="chart-wrap"><canvas id="chartProgress"></canvas></div>
+        </section>
+
+        <section class="card chart-card">
+          <h3 class="card-title">Tipo de enfoque</h3>
+          <p class="card-text">Comparación entre enfoques puros y mixtos.</p>
+          <div class="chart-wrap"><canvas id="chartPureMixed"></canvas></div>
+        </section>
+
+        <section class="card chart-card full-span">
+          <h3 class="card-title">Registros por año</h3>
+          <p class="card-text">Número de comparsas importadas por año.</p>
+          <div class="chart-wrap"><canvas id="chartYears"></canvas></div>
+        </section>
+
+        <section class="card insights full-span">
+          <h3 class="card-title">Hallazgos automáticos</h3>
+          <p class="card-text">Resumen dinámico basado en los datos cargados.</p>
+          <ul id="insightsList"></ul>
+        </section>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'comparsas_table_data_v3';
+    const STAGES = ['Preliminar 1', 'Preliminar 2', 'Cuartos 1', 'Cuartos 2', 'Semifinal 1', 'Semifinal 2', 'Final 1', 'Final 2'];
+    const MODE_LABELS = {
+      '': '',
+      'L': 'Lírico',
+      'N': 'Narrativo',
+      'R': 'Reflexivo',
+      'L/N': 'Lírico / Narrativo',
+      'L/R': 'Lírico / Reflexivo',
+      'N/R': 'Narrativo / Reflexivo',
+      'L/N/R': 'Lírico / Narrativo / Reflexivo',
+      'LIRICO': 'Lírico',
+      'NARRATIVO': 'Narrativo',
+      'REFLEXIVO': 'Reflexivo',
+      'LÍRICO': 'Lírico',
+      'LÍRICO / NARRATIVO': 'Lírico / Narrativo',
+      'LÍRICO / REFLEXIVO': 'Lírico / Reflexivo',
+      'NARRATIVO / REFLEXIVO': 'Narrativo / Reflexivo',
+      'LÍRICO / NARRATIVO / REFLEXIVO': 'Lírico / Narrativo / Reflexivo',
+      'LIRICO / NARRATIVO': 'Lírico / Narrativo',
+      'LIRICO / REFLEXIVO': 'Lírico / Reflexivo',
+      'LIRICO / NARRATIVO / REFLEXIVO': 'Lírico / Narrativo / Reflexivo'
+    };
+    const OPTIONS = ['', 'Lírico', 'Narrativo', 'Reflexivo', 'Lírico / Narrativo', 'Lírico / Reflexivo', 'Narrativo / Reflexivo', 'Lírico / Narrativo / Reflexivo'];
+
+    const form = document.getElementById('comparsaForm');
+    const tableBody = document.getElementById('tableBody');
+    const statusEl = document.getElementById('status');
+    const searchInput = document.getElementById('searchInput');
+    const totalRowsEl = document.getElementById('totalRows');
+    const finalistsEl = document.getElementById('finalists');
+    const fileInput = document.getElementById('fileInput');
+
+    let data = [];
+    let selectedId = null;
+    let charts = {};
+
+    function uid() { return 'id-' + Date.now() + '-' + Math.random().toString(16).slice(2); }
+
+    function normalizeHeader(header = '') {
+      return String(header).trim().toLowerCase()
+        .replaceAll('á', 'a').replaceAll('é', 'e').replaceAll('í', 'i').replaceAll('ó', 'o').replaceAll('ú', 'u');
+    }
+
+    function extractYearFromText(text = '') {
+      const m = String(text).match(/(19|20)\d{2}/);
+      return m ? m[0] : '';
+    }
+
+    function mapHeader(header = '') {
+      const h = normalizeHeader(header);
+      if (['comparsas', 'comparsa', 'nombre'].includes(h)) return 'comparsa';
+      if (['ano', 'año', 'year'].includes(h)) return 'year';
+      const alias = {
+        'preliminar 1': 'Preliminar 1', 'preliminar1': 'Preliminar 1', 'g': 'Preliminar 1',
+        'preliminar 2': 'Preliminar 2', 'preliminar2': 'Preliminar 2',
+        'cuartos 1': 'Cuartos 1', 'cuartos1': 'Cuartos 1',
+        'cuartos 2': 'Cuartos 2', 'cuartos2': 'Cuartos 2',
+        'semifinal 1': 'Semifinal 1', 'semifinal1': 'Semifinal 1',
+        'semifinal 2': 'Semifinal 2', 'semifinal2': 'Semifinal 2',
+        'final 1': 'Final 1', 'final1': 'Final 1',
+        'final 2': 'Final 2', 'final2': 'Final 2'
+      };
+      return alias[h] || null;
+    }
+
+    function normalizeMode(value = '') {
+      const clean = String(value).trim();
+      if (!clean) return '';
+      const upper = clean.toUpperCase().replaceAll('Á', 'A').replaceAll('É', 'E').replaceAll('Í', 'I').replaceAll('Ó', 'O').replaceAll('Ú', 'U');
+      return MODE_LABELS[clean] || MODE_LABELS[upper] || clean;
+    }
+
+    function createDefaultRecord(record = {}) {
+      const obj = { id: record.id || uid(), comparsa: String(record.comparsa || '').trim(), year: String(record.year || '').trim() };
+      STAGES.forEach(stage => obj[stage] = normalizeMode(record[stage] || ''));
+      return obj;
+    }
+
+    function setupFormSelects() {
+      ['preliminar1', 'preliminar2', 'cuartos1', 'cuartos2', 'semifinal1', 'semifinal2', 'final1', 'final2'].forEach(id => {
+        const select = document.getElementById(id);
+        select.innerHTML = OPTIONS.map(value => `<option value="${value}">${value || '—'}</option>`).join('');
+      });
+    }
+
+    function loadData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            data = parsed.map(createDefaultRecord);
+            return;
+          }
+        }
+      } catch (error) { console.error(error); }
+      data = [];
+      persist(false);
+    }
+
+    function persist(showMessage = true, message = 'Datos guardados correctamente.') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      if (showMessage) setStatus(message);
+      updateStats();
+      updateDashboard();
+    }
+
+    function setStatus(message, isError = false) {
+      statusEl.textContent = message;
+      statusEl.style.color = isError ? 'var(--danger)' : 'var(--success)';
+    }
+
+    function getFormData() {
+      return {
+        comparsa: document.getElementById('comparsa').value.trim(),
+        year: document.getElementById('year').value.trim(),
+        'Preliminar 1': document.getElementById('preliminar1').value,
+        'Preliminar 2': document.getElementById('preliminar2').value,
+        'Cuartos 1': document.getElementById('cuartos1').value,
+        'Cuartos 2': document.getElementById('cuartos2').value,
+        'Semifinal 1': document.getElementById('semifinal1').value,
+        'Semifinal 2': document.getElementById('semifinal2').value,
+        'Final 1': document.getElementById('final1').value,
+        'Final 2': document.getElementById('final2').value
+      };
+    }
+
+    function fillForm(record) {
+      document.getElementById('comparsa').value = record.comparsa || '';
+      document.getElementById('year').value = record.year || '';
+      document.getElementById('preliminar1').value = record['Preliminar 1'] || '';
+      document.getElementById('preliminar2').value = record['Preliminar 2'] || '';
+      document.getElementById('cuartos1').value = record['Cuartos 1'] || '';
+      document.getElementById('cuartos2').value = record['Cuartos 2'] || '';
+      document.getElementById('semifinal1').value = record['Semifinal 1'] || '';
+      document.getElementById('semifinal2').value = record['Semifinal 2'] || '';
+      document.getElementById('final1').value = record['Final 1'] || '';
+      document.getElementById('final2').value = record['Final 2'] || '';
+    }
+
+    function clearForm() {
+      form.reset();
+      setupFormSelects();
+      selectedId = null;
+      renderTable();
+      setStatus('Formulario limpio.');
+    }
+
+    function clearFormSilently() {
+      form.reset();
+      setupFormSelects();
+      selectedId = null;
+    }
+
+    function sortData() {
+      data.sort((a, b) => {
+        const ay = a.year || '0';
+        const by = b.year || '0';
+        if (ay !== by) return ay.localeCompare(by, 'es', { numeric: true });
+        return a.comparsa.localeCompare(b.comparsa, 'es', { sensitivity: 'base' });
+      });
+    }
+
+    function saveFromForm(event) {
+      event.preventDefault();
+      const values = getFormData();
+      if (!values.comparsa) {
+        setStatus('El nombre de la comparsa es obligatorio.', true);
+        return;
+      }
+      const duplicated = data.find(item =>
+        item.comparsa.toLowerCase() === values.comparsa.toLowerCase() &&
+        String(item.year || '') === String(values.year || '') &&
+        item.id !== selectedId
+      );
+      if (duplicated) {
+        setStatus('Ya existe esa comparsa para ese año.', true);
+        return;
+      }
+      if (selectedId) {
+        const index = data.findIndex(item => item.id === selectedId);
+        if (index !== -1) data[index] = { ...data[index], ...values };
+        persist(true, 'Fila actualizada y guardada.');
+      } else {
+        data.push({ id: uid(), ...values });
+        persist(true, 'Nueva comparsa guardada.');
+      }
+      sortData();
+      renderTable();
+      clearFormSilently();
+    }
+
+    function createCellSelect(rowId, stage, value) {
+      return `<select class="mini-select" data-id="${rowId}" data-stage="${stage}">
+        ${OPTIONS.map(option => `<option value="${option}" ${option === value ? 'selected' : ''}>${option || '—'}</option>`).join('')}
+      </select>`;
+    }
+
+    function escapeHtml(text) {
+      return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    function renderTable() {
+      const query = searchInput.value.trim().toLowerCase();
+      const filtered = data.filter(item =>
+        item.comparsa.toLowerCase().includes(query) || String(item.year || '').includes(query)
+      );
+      tableBody.innerHTML = filtered.map(item => `
+        <tr class="${selectedId === item.id ? 'selected' : ''}">
+          <td>${escapeHtml(item.year || '')}</td>
+          <td class="comparsa-name">${escapeHtml(item.comparsa)}</td>
+          ${STAGES.map(stage => `<td>${createCellSelect(item.id, stage, item[stage] || '')}</td>`).join('')}
+          <td>
+            <div class="row-actions">
+              <button type="button" class="icon-btn" data-action="edit" data-id="${item.id}">Editar</button>
+              <button type="button" class="icon-btn danger-soft" data-action="delete" data-id="${item.id}">Eliminar</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function updateStats() {
+      totalRowsEl.textContent = data.length;
+      finalistsEl.textContent = data.filter(item => item['Final 1'] || item['Final 2']).length;
+    }
+
+    function exportCSV() {
+      const headers = ['Año', 'COMPARSAS', ...STAGES];
+      const rows = data.map(item => [item.year || '', item.comparsa, ...STAGES.map(stage => item[stage] || '')]);
+      const csv = [headers, ...rows].map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(';')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'comparsas_export.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setStatus('CSV exportado correctamente.');
+    }
+
+    function deleteRow(id) {
+      const record = data.find(item => item.id === id);
+      if (!record) return;
+      if (!window.confirm(`¿Quieres eliminar la comparsa "${record.comparsa}"?`)) return;
+      data = data.filter(item => item.id !== id);
+      if (selectedId === id) clearFormSilently();
+      persist(true, 'Fila eliminada y cambios guardados.');
+      renderTable();
+    }
+
+    function editRow(id) {
+      const record = data.find(item => item.id === id);
+      if (!record) return;
+      selectedId = id;
+      fillForm(record);
+      renderTable();
+      setStatus(`Editando: ${record.comparsa}`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function updateCell(rowId, stage, value) {
+      const record = data.find(item => item.id === rowId);
+      if (!record) return;
+      record[stage] = value;
+      persist(true, `Cambio guardado en ${record.comparsa}.`);
+      if (selectedId === rowId) fillForm(record);
+    }
+
+    function clearAllData() {
+      if (!window.confirm('Esto vaciará la tabla y el localStorage. ¿Continuar?')) return;
+      data = [];
+      selectedId = null;
+      persist(true, 'Tabla vaciada.');
+      clearFormSilently();
+      renderTable();
+    }
+
+    function importRows(rows) {
+      const imported = rows
+        .map(raw => createDefaultRecord(raw))
+        .filter(r => r.comparsa);
+
+      data = imported;
+      sortData();
+      persist(true, `Archivo importado correctamente. ${imported.length} filas cargadas.`);
+      renderTable();
+      clearFormSilently();
+    }
+
+    function parseCSV(text) {
+      const lines = text.split(/\r?\n/).filter(Boolean);
+      if (!lines.length) return [];
+      const splitLine = (line) => {
+        const result = [];
+        let current = '', inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          if (ch === '"') {
+            if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+            else inQuotes = !inQuotes;
+          } else if ((ch === ';' || ch === ',') && !inQuotes) {
+            result.push(current); current = '';
+          } else current += ch;
+        }
+        result.push(current);
+        return result.map(s => s.trim());
+      };
+      const headers = splitLine(lines[0]).map(h => mapHeader(h) || h);
+      return lines.slice(1).map(line => {
+        const values = splitLine(line);
+        const obj = {};
+        headers.forEach((h, i) => obj[h] = values[i] || '');
+        return obj;
+      });
+    }
+
+    function extractRowsFromWeirdSheet(sheetName, worksheet) {
+      const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', blankrows: false });
+      const yearFromSheet = extractYearFromText(sheetName);
+      let headerRowIndex = -1;
+      let headerMap = {};
+
+      for (let i = 0; i < Math.min(rows.length, 12); i++) {
+        const row = rows[i].map(v => String(v || '').trim());
+        const mapped = row.map(mapHeader);
+        if (mapped.includes('comparsa') && mapped.filter(Boolean).length >= 3) {
+          headerRowIndex = i;
+          headerMap = {};
+          row.forEach((cell, idx) => {
+            const mappedHeader = mapHeader(cell);
+            if (mappedHeader) headerMap[idx] = mappedHeader;
+          });
+          break;
+        }
+      }
+
+      if (headerRowIndex === -1) return [];
+
+      const result = [];
+      for (let i = headerRowIndex + 1; i < rows.length; i++) {
+        const row = rows[i];
+        const first = String(row[0] || '').trim();
+        const second = String(row[1] || '').trim();
+
+        if (!first && !second) continue;
+
+        // stop at summary areas or meta text
+        const stopPhrases = [
+          'tipos de enfoque', 'enfoque puro', 'enfoque mixto',
+          'lirico', 'lírico', 'narrativo', 'reflexivo'
+        ];
+        const rowText = row.map(v => String(v || '').trim().toLowerCase()).join(' | ');
+        if (stopPhrases.some(p => rowText.includes(p))) continue;
+
+        const record = { year: yearFromSheet };
+        Object.entries(headerMap).forEach(([colIndex, field]) => {
+          const value = row[Number(colIndex)];
+          if (field === 'comparsa') record.comparsa = String(value || '').trim();
+          else if (field === 'year') record.year = String(value || '').trim() || yearFromSheet;
+          else record[field] = value;
+        });
+
+        // discard summary numeric rows and empty comparsa rows
+        if (!record.comparsa) continue;
+        if (/^\d+([.,]\d+)?$/.test(record.comparsa)) continue;
+        result.push(record);
+      }
+
+      return result;
+    }
+
+    async function handleFileImport(file) {
+      if (!file) return;
+      const name = file.name.toLowerCase();
+      try {
+        if (name.endsWith('.csv')) {
+          const text = await file.text();
+          importRows(parseCSV(text));
+          return;
+        }
+        if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+          const buffer = await file.arrayBuffer();
+          const workbook = XLSX.read(buffer, { type: 'array' });
+
+          let allRows = [];
+          workbook.SheetNames.forEach(sheetName => {
+            const ws = workbook.Sheets[sheetName];
+            const sheetRows = extractRowsFromWeirdSheet(sheetName, ws);
+            if (sheetRows.length) {
+              allRows = allRows.concat(sheetRows);
+            } else {
+              // fallback for standard sheets
+              const jsonRows = XLSX.utils.sheet_to_json(ws, { defval: '' }).map(raw => {
+                const normalized = {};
+                Object.keys(raw || {}).forEach(key => {
+                  const mapped = mapHeader(key);
+                  if (mapped) normalized[mapped] = raw[key];
+                });
+                if (!normalized.year) normalized.year = extractYearFromText(sheetName);
+                return normalized;
+              }).filter(r => r.comparsa);
+              allRows = allRows.concat(jsonRows);
+            }
+          });
+
+          importRows(allRows);
+          return;
+        }
+        setStatus('Formato no soportado. Usa CSV o XLSX.', true);
+      } catch (error) {
+        console.error(error);
+        setStatus('Error al importar el archivo.', true);
+      }
+    }
+
+    function getMaxStage(record) {
+      if (record['Final 1'] || record['Final 2']) return 'Final';
+      if (record['Semifinal 1'] || record['Semifinal 2']) return 'Semifinal';
+      if (record['Cuartos 1'] || record['Cuartos 2']) return 'Cuartos';
+      if (record['Preliminar 1'] || record['Preliminar 2']) return 'Preliminar';
+      return 'Sin datos';
+    }
+
+    function getDashboardMetrics() {
+      const modeCounts = {};
+      const stageCounts = {};
+      const progressCounts = { 'Preliminar': 0, 'Cuartos': 0, 'Semifinal': 0, 'Final': 0, 'Sin datos': 0 };
+      const yearCounts = {};
+      let entries = 0, pure = 0, mixed = 0;
+
+      STAGES.forEach(s => stageCounts[s] = 0);
+
+      data.forEach(row => {
+        const topStage = getMaxStage(row);
+        progressCounts[topStage] = (progressCounts[topStage] || 0) + 1;
+        yearCounts[row.year || 'Sin año'] = (yearCounts[row.year || 'Sin año'] || 0) + 1;
+
+        STAGES.forEach(stage => {
+          const value = row[stage];
+          if (value) {
+            entries++;
+            stageCounts[stage]++;
+            modeCounts[value] = (modeCounts[value] || 0) + 1;
+            if (value.includes('/')) mixed++; else pure++;
+          }
+        });
+      });
+
+      return { modeCounts, stageCounts, progressCounts, yearCounts, entries, pure, mixed };
+    }
+
+    function destroyCharts() {
+      Object.values(charts).forEach(chart => chart && chart.destroy());
+      charts = {};
+    }
+
+    function buildChart(id, type, labels, values, label) {
+      const ctx = document.getElementById(id);
+      if (!ctx) return null;
+      return new Chart(ctx, {
+        type,
+        data: { labels, datasets: [{ label, data: values }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: type !== 'bar' ? true : false } },
+          scales: type === 'bar' ? { y: { beginAtZero: true } } : {}
+        }
+      });
+    }
+
+    function updateInsights(metrics) {
+      const list = document.getElementById('insightsList');
+      const items = [];
+      const modeEntries = Object.entries(metrics.modeCounts).sort((a, b) => b[1] - a[1]);
+      const topMode = modeEntries[0];
+      const topStageEntry = Object.entries(metrics.stageCounts).sort((a, b) => b[1] - a[1])[0];
+      const topYear = Object.entries(metrics.yearCounts).sort((a, b) => b[1] - a[1])[0];
+      const finals = data.filter(r => getMaxStage(r) === 'Final').length;
+
+      if (!data.length) {
+        list.innerHTML = '<li class="muted">Todavía no hay datos. Importa un archivo o añade filas manualmente para ver el análisis.</li>';
+        return;
+      }
+
+      if (topMode) items.push(`La modalidad más frecuente es <strong>${topMode[0]}</strong> con <strong>${topMode[1]}</strong> apariciones.`);
+      if (topStageEntry) items.push(`La fase con más celdas informadas es <strong>${topStageEntry[0]}</strong> con <strong>${topStageEntry[1]}</strong> registros.`);
+      if (topYear) items.push(`El año con más comparsas cargadas es <strong>${topYear[0]}</strong> con <strong>${topYear[1]}</strong> filas.`);
+      items.push(`Hay <strong>${finals}</strong> comparsas que llegan a final.`);
+      items.push(`Predominio de enfoques <strong>${metrics.mixed >= metrics.pure ? 'mixtos' : 'puros'}</strong>: mixtos ${metrics.mixed}, puros ${metrics.pure}.`);
+
+      list.innerHTML = items.map(item => `<li>${item}</li>`).join('');
+    }
+
+    function updateDashboard() {
+      const metrics = getDashboardMetrics();
+
+      document.getElementById('kpiRows').textContent = data.length;
+      document.getElementById('kpiEntries').textContent = metrics.entries;
+      document.getElementById('kpiFinalists').textContent = data.filter(r => getMaxStage(r) === 'Final').length;
+      document.getElementById('kpiYears').textContent = Object.keys(metrics.yearCounts).filter(Boolean).length;
+
+      destroyCharts();
+
+      charts.modes = buildChart('chartModes', 'bar', Object.keys(metrics.modeCounts), Object.values(metrics.modeCounts), 'Frecuencia');
+      charts.stages = buildChart('chartStages', 'bar', STAGES, STAGES.map(stage => metrics.stageCounts[stage] || 0), 'Comparsas con dato');
+      charts.progress = buildChart('chartProgress', 'pie', Object.keys(metrics.progressCounts), Object.values(metrics.progressCounts), 'Avance máximo');
+      charts.pureMixed = buildChart('chartPureMixed', 'doughnut', ['Puro', 'Mixto'], [metrics.pure, metrics.mixed], 'Tipo de enfoque');
+      charts.years = buildChart('chartYears', 'bar', Object.keys(metrics.yearCounts).sort(), Object.keys(metrics.yearCounts).sort().map(y => metrics.yearCounts[y]), 'Comparsas por año');
+
+      updateInsights(metrics);
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+        if (btn.dataset.tab === 'dashboard') updateDashboard();
+      });
+    });
+
+    form.addEventListener('submit', saveFromForm);
+    document.getElementById('newBtn').addEventListener('click', clearForm);
+    document.getElementById('exportBtn').addEventListener('click', exportCSV);
+    document.getElementById('clearTableBtn').addEventListener('click', clearAllData);
+    document.getElementById('resetStorageBtn').addEventListener('click', clearAllData);
+    searchInput.addEventListener('input', renderTable);
+    fileInput.addEventListener('change', e => handleFileImport(e.target.files[0]));
+
+    tableBody.addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-action]');
+      if (!button) return;
+      if (button.dataset.action === 'edit') editRow(button.dataset.id);
+      if (button.dataset.action === 'delete') deleteRow(button.dataset.id);
+    });
+
+    tableBody.addEventListener('change', (event) => {
+      const select = event.target.closest('select[data-id][data-stage]');
+      if (!select) return;
+      updateCell(select.dataset.id, select.dataset.stage, select.value);
+    });
+
+    setupFormSelects();
+    loadData();
+    sortData();
+    renderTable();
+    updateStats();
+    updateDashboard();
+    setStatus('Aplicación lista. También soporta el Excel multih hoja del estudio.');
+  </script>
+</body>
+
+</html>
