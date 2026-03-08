@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gestor y dashboard de comparsas</title>
+  <title>Gestor y dashboard de comparsas + IA de Chrome</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <style>
@@ -18,6 +18,7 @@
       --primary-soft: #ede9fe;
       --success: #059669;
       --danger: #dc2626;
+      --warning: #b45309;
       --shadow: 0 10px 30px rgba(0, 0, 0, .08);
     }
 
@@ -33,7 +34,7 @@
     }
 
     .container {
-      max-width: 1500px;
+      max-width: 1540px;
       margin: 0 auto;
       padding: 24px
     }
@@ -126,6 +127,13 @@
       gap: 18px
     }
 
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+      gap: 12px;
+      align-items: end
+    }
+
     label {
       display: block;
       font-size: 13px;
@@ -134,7 +142,8 @@
     }
 
     input,
-    select {
+    select,
+    textarea {
       width: 100%;
       padding: 11px 12px;
       border-radius: 12px;
@@ -146,9 +155,15 @@
     }
 
     input:focus,
-    select:focus {
+    select:focus,
+    textarea:focus {
       border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(124, 58, 237, .12)
+    }
+
+    textarea {
+      min-height: 112px;
+      resize: vertical
     }
 
     .actions {
@@ -209,7 +224,7 @@
 
     .table-wrap {
       overflow: auto;
-      max-height: 75vh;
+      max-height: 100vh;
       border-radius: 0 0 18px 18px
     }
 
@@ -258,10 +273,6 @@
       padding: 8px 10px;
       border-radius: 10px;
       font-size: 13px
-    }
-
-    .mini-year {
-      min-width: 100px
     }
 
     .row-actions {
@@ -314,7 +325,7 @@
 
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 14px;
       margin-bottom: 18px
     }
@@ -347,11 +358,14 @@
       height: 320px
     }
 
-    .insights {
+    .insights,
+    .ai-card,
+    .filter-card {
       padding: 18px
     }
 
-    .insights ul {
+    .insights ul,
+    .ai-evidence ul {
       margin: 10px 0 0;
       padding-left: 18px
     }
@@ -373,10 +387,103 @@
       font-size: 13px
     }
 
-    @media (max-width:1200px) {
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #f3f4f6;
+      font-size: 12px;
+      color: #374151
+    }
+
+    .ai-status {
+      margin-top: 10px;
+      font-size: 13px;
+      min-height: 18px
+    }
+
+    .ai-progress-wrap {
+      margin-top: 10px;
+      height: 10px;
+      background: #ede9fe;
+      border-radius: 999px;
+      overflow: hidden
+    }
+
+    .ai-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #7c3aed;
+      transition: width .2s ease
+    }
+
+    .ai-meta {
+      display: grid;
+      gap: 10px
+    }
+
+    .ai-meta-item {
+      padding: 12px;
+      border: 1px solid #ece7ff;
+      border-radius: 12px;
+      background: #fff
+    }
+
+    .ai-meta-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px
+    }
+
+    .ai-meta-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: #312e81;
+      line-height: 1.4
+    }
+
+    .ai-answer {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 14px;
+      background: #faf7ff;
+      border: 1px solid #e9d5ff
+    }
+
+    .ai-answer-title {
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: #4c1d95
+    }
+
+    .ai-context {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .warning {
+      color: #b45309
+    }
+
+    .success {
+      color: var(--success)
+    }
+
+    .danger {
+      color: var(--danger)
+    }
+
+    @media (max-width:1280px) {
 
       .dashboard-grid,
       .kpi-grid {
+        grid-template-columns: 1fr 1fr
+      }
+
+      .filter-grid {
         grid-template-columns: 1fr 1fr
       }
     }
@@ -394,7 +501,8 @@
     @media (max-width:700px) {
 
       .dashboard-grid,
-      .kpi-grid {
+      .kpi-grid,
+      .filter-grid {
         grid-template-columns: 1fr
       }
     }
@@ -404,8 +512,9 @@
 <body>
   <div class="container">
     <h1>Gestor y dashboard de comparsas</h1>
-    <p class="subtitle">Importa CSV o Excel, incluso libros con varias hojas por año como tu estudio estadístico. El
-      importador detecta automáticamente la tabla útil y descarta los bloques de resumen internos.</p>
+    <p class="subtitle">Importa CSV o Excel, incluso libros con varias hojas por año. El dashboard incluye filtros
+      analíticos y un cuadro de preguntas conectado a la IA integrada de Chrome para responder solo con el dataset
+      cargado.</p>
 
     <div class="tabs">
       <button class="tab-btn active" data-tab="datos">Datos</button>
@@ -472,7 +581,7 @@
         <section class="card">
           <div class="toolbar">
             <div class="toolbar-group">
-              <input id="searchInput" type="text" placeholder="Buscar comparsa..." style="min-width:240px" />
+              <input id="searchInput" type="text" placeholder="Buscar comparsa o año..." style="min-width:240px" />
             </div>
             <div class="toolbar-group">
               <button type="button" id="clearTableBtn" class="btn-secondary">Vaciar tabla</button>
@@ -503,14 +612,69 @@
       </div>
     </section>
 
+
     <section id="tab-dashboard" class="tab-panel">
+      <section class="card ai-card full-span" style="margin-bottom:18px">
+        <h3 class="card-title">IA de Chrome para consultar los datos</h3>
+        <p class="card-text">Haz preguntas sobre el dataset filtrado actual. La IA debe responder solo con esos datos y,
+          si no entiende la pregunta o no encuentra base suficiente, debe decirlo explícitamente.</p>
+
+        <div class="stats" style="margin-top:0;margin-bottom:12px">
+          <span class="chip">Base: dataset filtrado actual</span>
+          <span class="chip" id="aiRowsChip">0 filas para IA</span>
+          <span class="chip" id="aiCompatChip">Compatibilidad: comprobando…</span>
+        </div>
+
+        <div class="card" style="padding:14px;border-radius:14px;background:#fcfcff;box-shadow:none">
+          <div style="display:grid;grid-template-columns:1.2fr .8fr;gap:14px;align-items:start">
+            <div>
+              <label for="aiQuestion">Tu pregunta</label>
+              <textarea id="aiQuestion" placeholder="Ej.: ¿Qué modalidad aparece más en 2026?
+¿Cuántas comparsas llegaron a la final?
+¿Qué comparsa tiene más fases informadas?"></textarea>
+
+              <div class="actions" style="margin-top:12px">
+                <button type="button" id="askAiBtn" class="btn-primary">Preguntar a la IA</button>
+                <button type="button" id="clearAiBtn" class="btn-secondary">Limpiar respuesta</button>
+                <button type="button" id="checkAiBtn" class="btn-secondary">Comprobar IA</button>
+              </div>
+
+              <div id="aiStatus" class="ai-status muted">Comprobando compatibilidad de la IA integrada de Chrome…</div>
+              <div class="ai-progress-wrap" id="aiProgressWrap" style="display:none">
+                <div class="ai-progress-bar" id="aiProgressBar"></div>
+              </div>
+              <div id="aiHelpText" class="ai-context">La app intentará detectar si tu Chrome es compatible y si el
+                modelo local necesita descargarse o prepararse.</div>
+            </div>
+
+            <div class="ai-meta">
+              <div class="ai-meta-item">
+                <div class="ai-meta-label">Compatibilidad</div>
+                <div class="ai-meta-value" id="aiCompatText">Comprobando…</div>
+              </div>
+              <div class="ai-meta-item">
+                <div class="ai-meta-label">Estado del modelo</div>
+                <div class="ai-meta-value" id="aiModelStateText">Pendiente</div>
+              </div>
+              <div class="ai-meta-item">
+                <div class="ai-meta-label">Qué ocurrirá</div>
+                <div class="ai-meta-value" id="aiActionText">Si Chrome lo permite, se usará el modelo local del
+                  navegador.</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="aiAnswer" class="ai-answer" style="display:none"></div>
+        </div>
+      </section>
+
       <div class="kpi-grid">
         <div class="kpi">
-          <div class="label">Comparsas</div>
+          <div class="label">Comparsas filtradas</div>
           <div class="value" id="kpiRows">0</div>
         </div>
         <div class="kpi">
-          <div class="label">Registros totales de fase</div>
+          <div class="label">Registros de fase</div>
           <div class="value" id="kpiEntries">0</div>
         </div>
         <div class="kpi">
@@ -521,18 +685,65 @@
           <div class="label">Años detectados</div>
           <div class="value" id="kpiYears">0</div>
         </div>
+        <div class="kpi">
+          <div class="label">Filtro activo</div>
+          <div class="value" id="kpiFilterState">No</div>
+        </div>
       </div>
 
       <div class="dashboard-grid">
+        <section class="card filter-card full-span">
+          <h3 class="card-title">Filtros del dashboard</h3>
+          <p class="card-text">Los gráficos y la IA usan exactamente el subconjunto de datos filtrado.</p>
+          <div class="filter-grid">
+            <div>
+              <label for="filterYear">Año</label>
+              <select id="filterYear"></select>
+            </div>
+            <div>
+              <label for="filterProgress">Fase máxima</label>
+              <select id="filterProgress">
+                <option value="all">Todas</option>
+                <option value="Preliminar">Preliminar</option>
+                <option value="Cuartos">Cuartos</option>
+                <option value="Semifinal">Semifinal</option>
+                <option value="Final">Final</option>
+                <option value="Sin datos">Sin datos</option>
+              </select>
+            </div>
+            <div>
+              <label for="filterMode">Modalidad presente</label>
+              <select id="filterMode"></select>
+            </div>
+            <div>
+              <label for="filterFocusType">Tipo de enfoque</label>
+              <select id="filterFocusType">
+                <option value="all">Todos</option>
+                <option value="pure">Solo comparsas con enfoque puro</option>
+                <option value="mixed">Solo comparsas con enfoque mixto</option>
+              </select>
+            </div>
+            <div>
+              <label for="filterComparsa">Comparsa contiene</label>
+              <input id="filterComparsa" type="text" placeholder="Ej. humanos" />
+            </div>
+            <div>
+              <button id="resetDashboardFilters" type="button" class="btn-secondary" style="width:100%">Limpiar
+                filtros</button>
+            </div>
+          </div>
+          <div class="ai-context" id="filterSummary">Sin filtros activos.</div>
+        </section>
+
         <section class="card chart-card">
           <h3 class="card-title">Distribución discursiva</h3>
-          <p class="card-text">Frecuencia total de las modalidades en todas las fases.</p>
+          <p class="card-text">Frecuencia total de las modalidades en el subconjunto filtrado.</p>
           <div class="chart-wrap"><canvas id="chartModes"></canvas></div>
         </section>
 
         <section class="card chart-card">
           <h3 class="card-title">Cobertura por fase</h3>
-          <p class="card-text">Cuántas comparsas tienen información en cada etapa.</p>
+          <p class="card-text">Cuántas comparsas filtradas tienen información en cada etapa.</p>
           <div class="chart-wrap"><canvas id="chartStages"></canvas></div>
         </section>
 
@@ -549,23 +760,25 @@
         </section>
 
         <section class="card chart-card full-span">
-          <h3 class="card-title">Registros por año</h3>
-          <p class="card-text">Número de comparsas importadas por año.</p>
+          <h3 class="card-title">Comparsas por año</h3>
+          <p class="card-text">Número de comparsas filtradas por año.</p>
           <div class="chart-wrap"><canvas id="chartYears"></canvas></div>
         </section>
 
-        <section class="card insights full-span">
+        <section class="card insights">
           <h3 class="card-title">Hallazgos automáticos</h3>
-          <p class="card-text">Resumen dinámico basado en los datos cargados.</p>
+          <p class="card-text">Resumen dinámico basado en los datos cargados y filtrados.</p>
           <ul id="insightsList"></ul>
         </section>
       </div>
     </section>
+    </section>
   </div>
 
   <script>
-    const STORAGE_KEY = 'comparsas_table_data_v3';
+    const STORAGE_KEY = 'comparsas_table_data_v4';
     const STAGES = ['Preliminar 1', 'Preliminar 2', 'Cuartos 1', 'Cuartos 2', 'Semifinal 1', 'Semifinal 2', 'Final 1', 'Final 2'];
+    const OPTIONS = ['', 'Lírico', 'Narrativo', 'Reflexivo', 'Lírico / Narrativo', 'Lírico / Reflexivo', 'Narrativo / Reflexivo', 'Lírico / Narrativo / Reflexivo'];
     const MODE_LABELS = {
       '': '',
       'L': 'Lírico',
@@ -576,18 +789,17 @@
       'N/R': 'Narrativo / Reflexivo',
       'L/N/R': 'Lírico / Narrativo / Reflexivo',
       'LIRICO': 'Lírico',
+      'LÍRICO': 'Lírico',
       'NARRATIVO': 'Narrativo',
       'REFLEXIVO': 'Reflexivo',
-      'LÍRICO': 'Lírico',
+      'LIRICO / NARRATIVO': 'Lírico / Narrativo',
       'LÍRICO / NARRATIVO': 'Lírico / Narrativo',
+      'LIRICO / REFLEXIVO': 'Lírico / Reflexivo',
       'LÍRICO / REFLEXIVO': 'Lírico / Reflexivo',
       'NARRATIVO / REFLEXIVO': 'Narrativo / Reflexivo',
-      'LÍRICO / NARRATIVO / REFLEXIVO': 'Lírico / Narrativo / Reflexivo',
-      'LIRICO / NARRATIVO': 'Lírico / Narrativo',
-      'LIRICO / REFLEXIVO': 'Lírico / Reflexivo',
-      'LIRICO / NARRATIVO / REFLEXIVO': 'Lírico / Narrativo / Reflexivo'
+      'LIRICO / NARRATIVO / REFLEXIVO': 'Lírico / Narrativo / Reflexivo',
+      'LÍRICO / NARRATIVO / REFLEXIVO': 'Lírico / Narrativo / Reflexivo'
     };
-    const OPTIONS = ['', 'Lírico', 'Narrativo', 'Reflexivo', 'Lírico / Narrativo', 'Lírico / Reflexivo', 'Narrativo / Reflexivo', 'Lírico / Narrativo / Reflexivo'];
 
     const form = document.getElementById('comparsaForm');
     const tableBody = document.getElementById('tableBody');
@@ -596,6 +808,18 @@
     const totalRowsEl = document.getElementById('totalRows');
     const finalistsEl = document.getElementById('finalists');
     const fileInput = document.getElementById('fileInput');
+    const aiQuestionEl = document.getElementById('aiQuestion');
+    const aiStatusEl = document.getElementById('aiStatus');
+    const aiAnswerEl = document.getElementById('aiAnswer');
+    const askAiBtn = document.getElementById('askAiBtn');
+    const checkAiBtn = document.getElementById('checkAiBtn');
+    const aiCompatChipEl = document.getElementById('aiCompatChip');
+    const aiCompatTextEl = document.getElementById('aiCompatText');
+    const aiModelStateTextEl = document.getElementById('aiModelStateText');
+    const aiActionTextEl = document.getElementById('aiActionText');
+    const aiHelpTextEl = document.getElementById('aiHelpText');
+    const aiProgressWrapEl = document.getElementById('aiProgressWrap');
+    const aiProgressBarEl = document.getElementById('aiProgressBar');
 
     let data = [];
     let selectedId = null;
@@ -633,12 +857,18 @@
     function normalizeMode(value = '') {
       const clean = String(value).trim();
       if (!clean) return '';
-      const upper = clean.toUpperCase().replaceAll('Á', 'A').replaceAll('É', 'E').replaceAll('Í', 'I').replaceAll('Ó', 'O').replaceAll('Ú', 'U');
+      const upper = clean.toUpperCase()
+        .replaceAll('Á', 'A').replaceAll('É', 'E').replaceAll('Í', 'I')
+        .replaceAll('Ó', 'O').replaceAll('Ú', 'U');
       return MODE_LABELS[clean] || MODE_LABELS[upper] || clean;
     }
 
     function createDefaultRecord(record = {}) {
-      const obj = { id: record.id || uid(), comparsa: String(record.comparsa || '').trim(), year: String(record.year || '').trim() };
+      const obj = {
+        id: record.id || uid(),
+        comparsa: String(record.comparsa || '').trim(),
+        year: String(record.year || '').trim()
+      };
       STAGES.forEach(stage => obj[stage] = normalizeMode(record[stage] || ''));
       return obj;
     }
@@ -660,7 +890,9 @@
             return;
           }
         }
-      } catch (error) { console.error(error); }
+      } catch (error) {
+        console.error(error);
+      }
       data = [];
       persist(false);
     }
@@ -669,6 +901,7 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       if (showMessage) setStatus(message);
       updateStats();
+      updateDashboardFilterOptions();
       updateDashboard();
     }
 
@@ -764,7 +997,12 @@
     }
 
     function escapeHtml(text) {
-      return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
 
     function renderTable() {
@@ -772,6 +1010,7 @@
       const filtered = data.filter(item =>
         item.comparsa.toLowerCase().includes(query) || String(item.year || '').includes(query)
       );
+
       tableBody.innerHTML = filtered.map(item => `
         <tr class="${selectedId === item.id ? 'selected' : ''}">
           <td>${escapeHtml(item.year || '')}</td>
@@ -795,7 +1034,9 @@
     function exportCSV() {
       const headers = ['Año', 'COMPARSAS', ...STAGES];
       const rows = data.map(item => [item.year || '', item.comparsa, ...STAGES.map(stage => item[stage] || '')]);
-      const csv = [headers, ...rows].map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(';')).join('\n');
+      const csv = [headers, ...rows]
+        .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(';'))
+        .join('\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -843,6 +1084,7 @@
       persist(true, 'Tabla vaciada.');
       clearFormSilently();
       renderTable();
+      clearAiOutput();
     }
 
     function importRows(rows) {
@@ -855,6 +1097,7 @@
       persist(true, `Archivo importado correctamente. ${imported.length} filas cargadas.`);
       renderTable();
       clearFormSilently();
+      clearAiOutput();
     }
 
     function parseCSV(text) {
@@ -870,7 +1113,9 @@
             else inQuotes = !inQuotes;
           } else if ((ch === ';' || ch === ',') && !inQuotes) {
             result.push(current); current = '';
-          } else current += ch;
+          } else {
+            current += ch;
+          }
         }
         result.push(current);
         return result.map(s => s.trim());
@@ -890,7 +1135,7 @@
       let headerRowIndex = -1;
       let headerMap = {};
 
-      for (let i = 0; i < Math.min(rows.length, 12); i++) {
+      for (let i = 0; i < Math.min(rows.length, 14); i++) {
         const row = rows[i].map(v => String(v || '').trim());
         const mapped = row.map(mapHeader);
         if (mapped.includes('comparsa') && mapped.filter(Boolean).length >= 3) {
@@ -907,20 +1152,18 @@
       if (headerRowIndex === -1) return [];
 
       const result = [];
+      const skipPhrases = [
+        'tipos de enfoque', 'enfoque puro', 'enfoque mixto',
+        'lírico', 'lirico', 'narrativo', 'reflexivo',
+        'resumen', 'porcentaje'
+      ];
+
       for (let i = headerRowIndex + 1; i < rows.length; i++) {
         const row = rows[i];
-        const first = String(row[0] || '').trim();
-        const second = String(row[1] || '').trim();
+        if (!row || !row.length) continue;
 
-        if (!first && !second) continue;
-
-        // stop at summary areas or meta text
-        const stopPhrases = [
-          'tipos de enfoque', 'enfoque puro', 'enfoque mixto',
-          'lirico', 'lírico', 'narrativo', 'reflexivo'
-        ];
         const rowText = row.map(v => String(v || '').trim().toLowerCase()).join(' | ');
-        if (stopPhrases.some(p => rowText.includes(p))) continue;
+        if (skipPhrases.some(p => rowText.includes(p))) continue;
 
         const record = { year: yearFromSheet };
         Object.entries(headerMap).forEach(([colIndex, field]) => {
@@ -930,7 +1173,6 @@
           else record[field] = value;
         });
 
-        // discard summary numeric rows and empty comparsa rows
         if (!record.comparsa) continue;
         if (/^\d+([.,]\d+)?$/.test(record.comparsa)) continue;
         result.push(record);
@@ -948,6 +1190,7 @@
           importRows(parseCSV(text));
           return;
         }
+
         if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
           const buffer = await file.arrayBuffer();
           const workbook = XLSX.read(buffer, { type: 'array' });
@@ -955,20 +1198,22 @@
           let allRows = [];
           workbook.SheetNames.forEach(sheetName => {
             const ws = workbook.Sheets[sheetName];
-            const sheetRows = extractRowsFromWeirdSheet(sheetName, ws);
-            if (sheetRows.length) {
-              allRows = allRows.concat(sheetRows);
+            const extracted = extractRowsFromWeirdSheet(sheetName, ws);
+
+            if (extracted.length) {
+              allRows = allRows.concat(extracted);
             } else {
-              // fallback for standard sheets
-              const jsonRows = XLSX.utils.sheet_to_json(ws, { defval: '' }).map(raw => {
-                const normalized = {};
-                Object.keys(raw || {}).forEach(key => {
-                  const mapped = mapHeader(key);
-                  if (mapped) normalized[mapped] = raw[key];
-                });
-                if (!normalized.year) normalized.year = extractYearFromText(sheetName);
-                return normalized;
-              }).filter(r => r.comparsa);
+              const jsonRows = XLSX.utils.sheet_to_json(ws, { defval: '' })
+                .map(raw => {
+                  const normalized = {};
+                  Object.keys(raw || {}).forEach(key => {
+                    const mapped = mapHeader(key);
+                    if (mapped) normalized[mapped] = raw[key];
+                  });
+                  if (!normalized.year) normalized.year = extractYearFromText(sheetName);
+                  return normalized;
+                })
+                .filter(r => r.comparsa);
               allRows = allRows.concat(jsonRows);
             }
           });
@@ -976,6 +1221,7 @@
           importRows(allRows);
           return;
         }
+
         setStatus('Formato no soportado. Usa CSV o XLSX.', true);
       } catch (error) {
         console.error(error);
@@ -991,7 +1237,66 @@
       return 'Sin datos';
     }
 
-    function getDashboardMetrics() {
+    function rowHasMode(record, mode) {
+      if (mode === 'all') return true;
+      return STAGES.some(stage => (record[stage] || '') === mode);
+    }
+
+    function rowMatchesFocusType(record, focusType) {
+      if (focusType === 'all') return true;
+      const values = STAGES.map(stage => record[stage]).filter(Boolean);
+      if (!values.length) return false;
+      const hasPure = values.some(v => !String(v).includes('/'));
+      const hasMixed = values.some(v => String(v).includes('/'));
+      if (focusType === 'pure') return hasPure;
+      if (focusType === 'mixed') return hasMixed;
+      return true;
+    }
+
+    function getFilterState() {
+      return {
+        year: document.getElementById('filterYear').value,
+        progress: document.getElementById('filterProgress').value,
+        mode: document.getElementById('filterMode').value,
+        focusType: document.getElementById('filterFocusType').value,
+        comparsa: document.getElementById('filterComparsa').value.trim().toLowerCase()
+      };
+    }
+
+    function getFilteredData() {
+      const filters = getFilterState();
+      return data.filter(row => {
+        if (filters.year !== 'all' && String(row.year || '') !== filters.year) return false;
+        if (filters.progress !== 'all' && getMaxStage(row) !== filters.progress) return false;
+        if (filters.mode !== 'all' && !rowHasMode(row, filters.mode)) return false;
+        if (!rowMatchesFocusType(row, filters.focusType)) return false;
+        if (filters.comparsa && !String(row.comparsa || '').toLowerCase().includes(filters.comparsa)) return false;
+        return true;
+      });
+    }
+
+    function hasActiveFilters() {
+      const f = getFilterState();
+      return !(f.year === 'all' && f.progress === 'all' && f.mode === 'all' && f.focusType === 'all' && !f.comparsa);
+    }
+
+    function updateDashboardFilterOptions() {
+      const yearSelect = document.getElementById('filterYear');
+      const modeSelect = document.getElementById('filterMode');
+      const years = [...new Set(data.map(r => r.year).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
+      const modes = [...new Set(data.flatMap(r => STAGES.map(s => r[s]).filter(Boolean)))].sort((a, b) => a.localeCompare(b, 'es'));
+
+      const currentYear = yearSelect.value || 'all';
+      const currentMode = modeSelect.value || 'all';
+
+      yearSelect.innerHTML = '<option value="all">Todos</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+      modeSelect.innerHTML = '<option value="all">Todas</option>' + modes.map(m => `<option value="${m}">${m}</option>`).join('');
+
+      yearSelect.value = years.includes(currentYear) ? currentYear : 'all';
+      modeSelect.value = modes.includes(currentMode) ? currentMode : 'all';
+    }
+
+    function getDashboardMetrics(rows) {
       const modeCounts = {};
       const stageCounts = {};
       const progressCounts = { 'Preliminar': 0, 'Cuartos': 0, 'Semifinal': 0, 'Final': 0, 'Sin datos': 0 };
@@ -1000,7 +1305,7 @@
 
       STAGES.forEach(s => stageCounts[s] = 0);
 
-      data.forEach(row => {
+      rows.forEach(row => {
         const topStage = getMaxStage(row);
         progressCounts[topStage] = (progressCounts[topStage] || 0) + 1;
         yearCounts[row.year || 'Sin año'] = (yearCounts[row.year || 'Sin año'] || 0) + 1;
@@ -1011,7 +1316,8 @@
             entries++;
             stageCounts[stage]++;
             modeCounts[value] = (modeCounts[value] || 0) + 1;
-            if (value.includes('/')) mixed++; else pure++;
+            if (String(value).includes('/')) mixed++;
+            else pure++;
           }
         });
       });
@@ -1039,55 +1345,405 @@
       });
     }
 
-    function updateInsights(metrics) {
+    function updateInsights(rows, metrics) {
       const list = document.getElementById('insightsList');
-      const items = [];
-      const modeEntries = Object.entries(metrics.modeCounts).sort((a, b) => b[1] - a[1]);
-      const topMode = modeEntries[0];
-      const topStageEntry = Object.entries(metrics.stageCounts).sort((a, b) => b[1] - a[1])[0];
-      const topYear = Object.entries(metrics.yearCounts).sort((a, b) => b[1] - a[1])[0];
-      const finals = data.filter(r => getMaxStage(r) === 'Final').length;
-
-      if (!data.length) {
-        list.innerHTML = '<li class="muted">Todavía no hay datos. Importa un archivo o añade filas manualmente para ver el análisis.</li>';
+      if (!rows.length) {
+        list.innerHTML = '<li class="muted">No hay datos para el filtro actual.</li>';
         return;
       }
 
-      if (topMode) items.push(`La modalidad más frecuente es <strong>${topMode[0]}</strong> con <strong>${topMode[1]}</strong> apariciones.`);
-      if (topStageEntry) items.push(`La fase con más celdas informadas es <strong>${topStageEntry[0]}</strong> con <strong>${topStageEntry[1]}</strong> registros.`);
-      if (topYear) items.push(`El año con más comparsas cargadas es <strong>${topYear[0]}</strong> con <strong>${topYear[1]}</strong> filas.`);
-      items.push(`Hay <strong>${finals}</strong> comparsas que llegan a final.`);
-      items.push(`Predominio de enfoques <strong>${metrics.mixed >= metrics.pure ? 'mixtos' : 'puros'}</strong>: mixtos ${metrics.mixed}, puros ${metrics.pure}.`);
+      const items = [];
+      const topMode = Object.entries(metrics.modeCounts).sort((a, b) => b[1] - a[1])[0];
+      const topStage = Object.entries(metrics.stageCounts).sort((a, b) => b[1] - a[1])[0];
+      const topYear = Object.entries(metrics.yearCounts).sort((a, b) => b[1] - a[1])[0];
+      const finals = rows.filter(r => getMaxStage(r) === 'Final').length;
+      const longest = [...rows].sort((a, b) => STAGES.filter(s => b[s]).length - STAGES.filter(s => a[s]).length)[0];
+
+      if (topMode) items.push(`La modalidad más frecuente en el filtro actual es <strong>${topMode[0]}</strong> con <strong>${topMode[1]}</strong> apariciones.`);
+      if (topStage) items.push(`La fase con más celdas informadas es <strong>${topStage[0]}</strong> con <strong>${topStage[1]}</strong> registros.`);
+      if (topYear) items.push(`El año con más comparsas dentro del filtro es <strong>${topYear[0]}</strong> con <strong>${topYear[1]}</strong> filas.`);
+      items.push(`Hay <strong>${finals}</strong> comparsas filtradas que alcanzan la final.`);
+      items.push(`Predominan los enfoques <strong>${metrics.mixed >= metrics.pure ? 'mixtos' : 'puros'}</strong>: mixtos ${metrics.mixed}, puros ${metrics.pure}.`);
+      if (longest) items.push(`La comparsa con más fases informadas en el filtro es <strong>${escapeHtml(longest.comparsa)}</strong> (${STAGES.filter(s => longest[s]).length} fases).`);
 
       list.innerHTML = items.map(item => `<li>${item}</li>`).join('');
     }
 
+    function updateFilterSummary(rows) {
+      const f = getFilterState();
+      const parts = [];
+      if (f.year !== 'all') parts.push(`Año: ${f.year}`);
+      if (f.progress !== 'all') parts.push(`Fase máxima: ${f.progress}`);
+      if (f.mode !== 'all') parts.push(`Modalidad: ${f.mode}`);
+      if (f.focusType !== 'all') parts.push(`Enfoque: ${f.focusType === 'pure' ? 'puro' : 'mixto'}`);
+      if (f.comparsa) parts.push(`Comparsa contiene: "${escapeHtml(f.comparsa)}"`);
+
+      document.getElementById('filterSummary').innerHTML = parts.length
+        ? `Filtros activos: ${parts.join(' · ')} · <strong>${rows.length}</strong> filas resultantes.`
+        : 'Sin filtros activos.';
+    }
+
     function updateDashboard() {
-      const metrics = getDashboardMetrics();
+      const rows = getFilteredData();
+      const metrics = getDashboardMetrics(rows);
 
-      document.getElementById('kpiRows').textContent = data.length;
+      document.getElementById('kpiRows').textContent = rows.length;
       document.getElementById('kpiEntries').textContent = metrics.entries;
-      document.getElementById('kpiFinalists').textContent = data.filter(r => getMaxStage(r) === 'Final').length;
+      document.getElementById('kpiFinalists').textContent = rows.filter(r => getMaxStage(r) === 'Final').length;
       document.getElementById('kpiYears').textContent = Object.keys(metrics.yearCounts).filter(Boolean).length;
+      document.getElementById('kpiFilterState').textContent = hasActiveFilters() ? 'Sí' : 'No';
+      document.getElementById('aiRowsChip').textContent = `${rows.length} filas para IA`;
 
+      updateFilterSummary(rows);
       destroyCharts();
 
       charts.modes = buildChart('chartModes', 'bar', Object.keys(metrics.modeCounts), Object.values(metrics.modeCounts), 'Frecuencia');
       charts.stages = buildChart('chartStages', 'bar', STAGES, STAGES.map(stage => metrics.stageCounts[stage] || 0), 'Comparsas con dato');
       charts.progress = buildChart('chartProgress', 'pie', Object.keys(metrics.progressCounts), Object.values(metrics.progressCounts), 'Avance máximo');
       charts.pureMixed = buildChart('chartPureMixed', 'doughnut', ['Puro', 'Mixto'], [metrics.pure, metrics.mixed], 'Tipo de enfoque');
-      charts.years = buildChart('chartYears', 'bar', Object.keys(metrics.yearCounts).sort(), Object.keys(metrics.yearCounts).sort().map(y => metrics.yearCounts[y]), 'Comparsas por año');
+      const sortedYears = Object.keys(metrics.yearCounts).sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
+      charts.years = buildChart('chartYears', 'bar', sortedYears, sortedYears.map(y => metrics.yearCounts[y]), 'Comparsas por año');
 
-      updateInsights(metrics);
+      updateInsights(rows, metrics);
+    }
+
+    function clearAiOutput() {
+      aiQuestionEl.value = '';
+      aiStatusEl.textContent = 'La respuesta se generará solo si la API de IA integrada de Chrome está disponible.';
+      aiStatusEl.className = 'ai-status muted';
+      aiAnswerEl.style.display = 'none';
+      aiAnswerEl.innerHTML = '';
+    }
+
+    function renderAiOutput(payload) {
+      const statusMap = {
+        ok: 'Respuesta basada en datos',
+        sin_datos: 'Sin datos suficientes',
+        no_entendido: 'Pregunta no entendida'
+      };
+      aiAnswerEl.style.display = 'block';
+      aiAnswerEl.innerHTML = `
+        <div class="ai-answer-title">${statusMap[payload.status] || 'Respuesta'}</div>
+        <div>${escapeHtml(payload.answer || '')}</div>
+        ${Array.isArray(payload.evidence) && payload.evidence.length ? `
+          <div class="ai-evidence" style="margin-top:12px">
+            <strong>Evidencia usada</strong>
+            <ul>${payload.evidence.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+          </div>
+        ` : ''}
+      `;
+    }
+
+    function setAiProgress(percent, show = true) {
+      aiProgressWrapEl.style.display = show ? 'block' : 'none';
+      aiProgressBarEl.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+    }
+
+    function setAiCompatibilityUi({ chip = 'Compatibilidad: comprobando…', compat = 'Comprobando…', model = 'Pendiente', action = 'La app intentará usar el modelo local del navegador.', help = '' } = {}) {
+      aiCompatChipEl.textContent = chip;
+      aiCompatTextEl.textContent = compat;
+      aiModelStateTextEl.textContent = model;
+      aiActionTextEl.textContent = action;
+      if (help) aiHelpTextEl.textContent = help;
+    }
+
+    function getLanguageModelApi() {
+      if (typeof LanguageModel !== 'undefined') return LanguageModel;
+      if (typeof window !== 'undefined' && typeof window.LanguageModel !== 'undefined') return window.LanguageModel;
+      if (typeof self !== 'undefined' && typeof self.LanguageModel !== 'undefined') return self.LanguageModel;
+      return null;
+    }
+
+    async function checkChromeAiSupport(showStatus = true) {
+      const LM = getLanguageModelApi();
+      const lmOptions = {
+        expectedInputs: [{ type: 'text', languages: ['es'] }],
+        expectedOutputs: [{ type: 'text', languages: ['es'] }]
+      };
+
+      if (!LM) {
+        setAiCompatibilityUi({
+          chip: 'Compatibilidad: no detectada',
+          compat: 'No detectada en este navegador o contexto',
+          model: 'No disponible',
+          action: 'Usa Chrome de escritorio compatible con la Prompt API.',
+          help: 'No se detecta la API LanguageModel. Si estás fuera de Chrome compatible o en un contexto no soportado, la IA no podrá responder.'
+        });
+        if (showStatus) {
+          aiStatusEl.textContent = 'No se detecta la IA integrada de Chrome en este navegador o contexto.';
+          aiStatusEl.className = 'ai-status danger';
+        }
+        setAiProgress(0, false);
+        return { supported: false, availability: 'unavailable', LM: null, lmOptions };
+      }
+
+      try {
+        const availability = await LM.availability(lmOptions);
+        if (availability === 'available') {
+          setAiCompatibilityUi({
+            chip: 'Compatibilidad: sí',
+            compat: 'Compatible',
+            model: 'Modelo disponible',
+            action: 'Puedes preguntar directamente a la IA.',
+            help: 'El modelo local parece estar listo. Las respuestas usarán solo los datos filtrados.'
+          });
+          if (showStatus) {
+            aiStatusEl.textContent = 'La IA integrada de Chrome está disponible y lista.';
+            aiStatusEl.className = 'ai-status success';
+          }
+          setAiProgress(100, false);
+        } else if (availability === 'downloading') {
+          setAiCompatibilityUi({
+            chip: 'Compatibilidad: sí',
+            compat: 'Compatible',
+            model: 'Descargando modelo',
+            action: 'Chrome está descargando o preparando el modelo local.',
+            help: 'Es normal que tarde un poco la primera vez. Cuando acabe, podrás preguntar a la IA.'
+          });
+          if (showStatus) {
+            aiStatusEl.textContent = 'Chrome está descargando o preparando el modelo. Espera a que termine.';
+            aiStatusEl.className = 'ai-status warning';
+          }
+          setAiProgress(5, true);
+        } else if (availability === 'downloadable') {
+          setAiCompatibilityUi({
+            chip: 'Compatibilidad: sí',
+            compat: 'Compatible',
+            model: 'Modelo no descargado todavía',
+            action: 'La primera consulta iniciará la descarga del modelo local.',
+            help: 'Si al preguntar tarda, probablemente Chrome esté descargando el modelo por primera vez.'
+          });
+          if (showStatus) {
+            aiStatusEl.textContent = 'El navegador es compatible. El modelo aún no está descargado.';
+            aiStatusEl.className = 'ai-status warning';
+          }
+          setAiProgress(0, false);
+        } else {
+          setAiCompatibilityUi({
+            chip: 'Compatibilidad: no',
+            compat: 'No disponible',
+            model: 'No utilizable aquí',
+            action: 'La IA integrada no puede ejecutarse en este dispositivo, versión o contexto.',
+            help: 'Puede deberse a versión de Chrome, hardware, flags o contexto no permitido.'
+          });
+          if (showStatus) {
+            aiStatusEl.textContent = 'La IA integrada de Chrome no está disponible en este dispositivo, versión o contexto.';
+            aiStatusEl.className = 'ai-status danger';
+          }
+          setAiProgress(0, false);
+        }
+
+        return { supported: availability !== 'unavailable', availability, LM, lmOptions };
+      } catch (error) {
+        console.error(error);
+        setAiCompatibilityUi({
+          chip: 'Compatibilidad: error',
+          compat: 'No se pudo comprobar',
+          model: 'Estado desconocido',
+          action: 'No he podido leer el estado de la API.',
+          help: 'La comprobación de compatibilidad falló en este entorno.'
+        });
+        if (showStatus) {
+          aiStatusEl.textContent = 'No se ha podido comprobar la compatibilidad de la IA de Chrome.';
+          aiStatusEl.className = 'ai-status danger';
+        }
+        setAiProgress(0, false);
+        return { supported: false, availability: 'unavailable', LM: null, lmOptions };
+      }
+    }
+
+    async function askChromeAIAboutData() {
+      const question = aiQuestionEl.value.trim();
+      if (!question) {
+        aiStatusEl.textContent = 'Escribe una pregunta antes de consultar.';
+        aiStatusEl.className = 'ai-status warning';
+        return;
+      }
+
+      const rows = getFilteredData();
+      if (!rows.length) {
+        aiStatusEl.textContent = 'No hay filas en el filtro actual. Ajusta los filtros o importa datos.';
+        aiStatusEl.className = 'ai-status warning';
+        return;
+      }
+
+      askAiBtn.disabled = true;
+      checkAiBtn.disabled = true;
+      aiStatusEl.textContent = 'Comprobando compatibilidad y estado del modelo...';
+      aiStatusEl.className = 'ai-status muted';
+
+      let session;
+      try {
+        const support = await checkChromeAiSupport(false);
+        if (!support.supported || !support.LM) {
+          aiStatusEl.textContent = 'No puedo usar la IA integrada de Chrome desde este entorno.';
+          aiStatusEl.className = 'ai-status danger';
+          renderAiOutput({
+            status: 'sin_datos',
+            answer: 'La IA integrada de Chrome no está disponible aquí.',
+            evidence: []
+          });
+          return;
+        }
+
+        if (support.availability === 'downloadable') {
+          aiStatusEl.textContent = 'Iniciando descarga o preparación del modelo local de Chrome...';
+          aiStatusEl.className = 'ai-status warning';
+          setAiCompatibilityUi({
+            chip: 'Compatibilidad: sí',
+            compat: 'Compatible',
+            model: 'Descargando / preparando',
+            action: 'La primera consulta puede tardar porque Chrome necesita el modelo local.',
+            help: 'Si ves progreso o demora, es la descarga/preparación inicial del modelo.'
+          });
+        } else if (support.availability === 'downloading') {
+          aiStatusEl.textContent = 'Chrome está terminando de descargar o preparar el modelo local...';
+          aiStatusEl.className = 'ai-status warning';
+        } else {
+          aiStatusEl.textContent = 'Modelo disponible. Preparando consulta...';
+          aiStatusEl.className = 'ai-status success';
+        }
+
+        session = await support.LM.create({
+          ...support.lmOptions,
+          initialPrompts: [{
+            role: 'system',
+            content: [{
+              type: 'text',
+              value:
+                `Eres un analista de datos del dashboard de comparsas.
+Reglas obligatorias:
+1. Solo puedes usar el dataset JSON que recibes en la solicitud.
+2. No uses conocimiento externo ni inferencias no respaldadas por los datos.
+3. Si la pregunta no se entiende dentro del contexto del dataset, devuelve status "no_entendido".
+4. Si la pregunta es entendible pero el dato no existe o no puede calcularse con el dataset dado, devuelve status "sin_datos".
+5. Si sí puede responderse, devuelve status "ok" con una respuesta breve y concreta en español.
+6. Incluye evidencia textual breve usando exactamente datos o conteos derivados del dataset.
+7. No inventes nombres, años, fases, modalidades ni cantidades.`
+            }]
+          }],
+          monitor(m) {
+            m.addEventListener('downloadprogress', (e) => {
+              const pct = typeof e.loaded === 'number' ? Math.round(e.loaded * 100) : 0;
+              setAiProgress(pct || 5, true);
+              aiStatusEl.textContent = `Descargando o preparando el modelo… ${pct}%`;
+              aiStatusEl.className = 'ai-status warning';
+              setAiCompatibilityUi({
+                chip: 'Compatibilidad: sí',
+                compat: 'Compatible',
+                model: `Descargando / preparando (${pct}%)`,
+                action: 'Chrome está descargando o cargando el modelo local.',
+                help: 'La primera ejecución puede tardar. Cuando termine, la respuesta se generará con el dataset filtrado.'
+              });
+            });
+          }
+        });
+
+        setAiProgress(100, false);
+        setAiCompatibilityUi({
+          chip: 'Compatibilidad: sí',
+          compat: 'Compatible',
+          model: 'Modelo listo',
+          action: 'Consulta en curso con el modelo local de Chrome.',
+          help: 'La respuesta se está generando únicamente con el subconjunto de datos visible para la IA.'
+        });
+
+        const payload = rows.map(({ id, ...rest }) => rest);
+        const schema = {
+          type: 'object',
+          properties: {
+            status: { type: 'string', enum: ['ok', 'no_entendido', 'sin_datos'] },
+            answer: { type: 'string' },
+            evidence: {
+              type: 'array',
+              items: { type: 'string' }
+            }
+          },
+          required: ['status', 'answer', 'evidence'],
+          additionalProperties: false
+        };
+
+        const prompt = `
+DATASET_JSON:
+${JSON.stringify(payload)}
+
+PREGUNTA_DEL_USUARIO:
+${question}
+
+Devuelve solo un objeto JSON válido con:
+- status: "ok" | "no_entendido" | "sin_datos"
+- answer: string
+- evidence: array de strings
+
+Si la pregunta pide algo fuera del dataset o no es clara, no adivines.
+`.trim();
+
+        aiStatusEl.textContent = 'Generando respuesta con la IA de Chrome...';
+        aiStatusEl.className = 'ai-status muted';
+
+        const raw = await session.prompt(prompt, {
+          responseConstraint: schema,
+          omitResponseConstraintInput: true
+        });
+
+        let parsed;
+        try {
+          parsed = JSON.parse(raw);
+        } catch (parseError) {
+          console.error(parseError, raw);
+          parsed = {
+            status: 'sin_datos',
+            answer: 'La IA no devolvió una respuesta estructurada válida.',
+            evidence: []
+          };
+        }
+
+        renderAiOutput(parsed);
+        if (parsed.status === 'ok') {
+          aiStatusEl.textContent = 'Respuesta generada exclusivamente con el dataset filtrado.';
+          aiStatusEl.className = 'ai-status success';
+        } else if (parsed.status === 'no_entendido') {
+          aiStatusEl.textContent = 'La IA no entendió la pregunta dentro del contexto de estos datos.';
+          aiStatusEl.className = 'ai-status warning';
+        } else {
+          aiStatusEl.textContent = 'La IA no encontró base suficiente en el dataset filtrado.';
+          aiStatusEl.className = 'ai-status warning';
+        }
+      } catch (error) {
+        console.error(error);
+        aiStatusEl.textContent = 'Error al usar la IA integrada de Chrome.';
+        aiStatusEl.className = 'ai-status danger';
+        renderAiOutput({
+          status: 'sin_datos',
+          answer: 'No he podido completar la consulta con la IA integrada de Chrome desde este contexto.',
+          evidence: []
+        });
+        setAiCompatibilityUi({
+          chip: 'Compatibilidad: error',
+          compat: 'Se produjo un error',
+          model: 'Consulta fallida',
+          action: 'La llamada a la IA no pudo completarse.',
+          help: 'Revisa si Chrome soporta la Prompt API y si el modelo local puede cargarse.'
+        });
+      } finally {
+        askAiBtn.disabled = false;
+        checkAiBtn.disabled = false;
+        try {
+          if (session && typeof session.destroy === 'function') session.destroy();
+        } catch (e) { }
+      }
     }
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-        if (btn.dataset.tab === 'dashboard') updateDashboard();
+        if (btn.dataset.tab === 'dashboard') {
+          updateDashboard();
+          await checkChromeAiSupport(true);
+        }
       });
     });
 
@@ -1096,8 +1752,25 @@
     document.getElementById('exportBtn').addEventListener('click', exportCSV);
     document.getElementById('clearTableBtn').addEventListener('click', clearAllData);
     document.getElementById('resetStorageBtn').addEventListener('click', clearAllData);
+    document.getElementById('clearAiBtn').addEventListener('click', clearAiOutput);
+    document.getElementById('resetDashboardFilters').addEventListener('click', () => {
+      document.getElementById('filterYear').value = 'all';
+      document.getElementById('filterProgress').value = 'all';
+      document.getElementById('filterMode').value = 'all';
+      document.getElementById('filterFocusType').value = 'all';
+      document.getElementById('filterComparsa').value = '';
+      updateDashboard();
+    });
+    askAiBtn.addEventListener('click', askChromeAIAboutData);
+    checkAiBtn.addEventListener('click', () => checkChromeAiSupport(true));
+
     searchInput.addEventListener('input', renderTable);
     fileInput.addEventListener('change', e => handleFileImport(e.target.files[0]));
+
+    ['filterYear', 'filterProgress', 'filterMode', 'filterFocusType', 'filterComparsa'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updateDashboard);
+      document.getElementById(id).addEventListener('change', updateDashboard);
+    });
 
     tableBody.addEventListener('click', (event) => {
       const button = event.target.closest('button[data-action]');
@@ -1115,10 +1788,13 @@
     setupFormSelects();
     loadData();
     sortData();
+    updateDashboardFilterOptions();
     renderTable();
     updateStats();
     updateDashboard();
-    setStatus('Aplicación lista. También soporta el Excel multih hoja del estudio.');
+    clearAiOutput();
+    checkChromeAiSupport(false);
+    setStatus('Aplicación lista. También soporta el Excel multihoja del estudio.');
   </script>
 </body>
 

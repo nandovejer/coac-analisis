@@ -1,20 +1,32 @@
 # Gestor y Dashboard de Comparsas
 
-Aplicación web **100% frontend** (HTML + CSS + JavaScript) para **registrar, importar, analizar y visualizar datos de comparsas** y sus **modalidades discursivas por fase del concurso**.
+Aplicación web **100% frontend** para **registrar, importar, editar, filtrar y analizar comparsas** y sus **modalidades discursivas por fase del concurso**, con una capa de **consulta asistida por IA local de Chrome** sobre el subconjunto de datos filtrado.
 
-La herramienta permite trabajar tanto con **tablas simples** como con **Excels complejos con múltiples hojas**, como el estudio estadístico de modalidades discursivas del pasodoble.
-
-No requiere backend ni instalación.
+> No requiere backend ni instalación. Todo funciona desde un único `index.html`.
 
 ---
 
-# Características principales
+## Qué hace esta herramienta
 
-## 1. Gestor de datos interactivo
+Este proyecto está pensado para trabajar con datasets culturales o de investigación sobre comparsas de forma visual, rápida y local.
 
-Permite introducir y editar datos manualmente desde un formulario.
+Permite:
 
-Campos disponibles:
+- cargar datos desde **CSV**, **XLSX** y **XLS**
+- registrar comparsas manualmente desde un formulario
+- editar las fases directamente desde la tabla
+- guardar cambios automáticamente en `localStorage`
+- explorar métricas y gráficos en un dashboard
+- aplicar filtros analíticos que afectan tanto a los gráficos como a la IA
+- hacer preguntas en lenguaje natural usando la **IA integrada de Chrome**, limitada al dataset filtrado actual
+
+---
+
+## Características principales
+
+### 1) Gestión manual de datos
+
+La pestaña **Datos** incluye un formulario para crear o actualizar registros con estos campos:
 
 - Año
 - Comparsa
@@ -27,49 +39,51 @@ Campos disponibles:
 - Final 1
 - Final 2
 
-Las modalidades discursivas disponibles son:
+Además:
 
-- Lírico
-- Narrativo
-- Reflexivo
-- Lírico / Narrativo
-- Lírico / Reflexivo
-- Narrativo / Reflexivo
-- Lírico / Narrativo / Reflexivo
-
-Los cambios se reflejan **automáticamente en la tabla**.
+- valida que el nombre de la comparsa sea obligatorio
+- evita duplicados de **comparsa + año**
+- permite limpiar el formulario
+- permite vaciar toda la tabla y el almacenamiento local
 
 ---
 
-# Persistencia local
+### 2) Tabla editable y búsqueda rápida
 
-La aplicación guarda los datos automáticamente en:
+La tabla principal permite:
 
-```
-localStorage
-```
-
-Esto permite que:
-
-- los datos **no se pierdan al recargar la página**
-- la herramienta funcione **sin servidor**
-- cada usuario tenga su **propio dataset local**
+- buscar por **comparsa** o **año**
+- editar cada fase directamente desde selectores inline
+- abrir una fila en modo edición
+- eliminar registros individuales
+- visualizar el total de filas y cuántas comparsas tienen final
 
 ---
 
-# Importación de archivos
+### 3) Persistencia automática en local
 
-La aplicación permite importar:
+La aplicación guarda los cambios automáticamente en `localStorage`, por lo que:
 
-- CSV
-- XLSX
-- XLS
+- los datos no se pierden al recargar la página
+- no hace falta montar servidor ni base de datos
+- cada usuario mantiene su propio dataset local en el navegador
 
-## Excel simple
+---
 
-Funciona con tablas que contengan columnas como:
+### 4) Importación flexible de archivos
 
-```
+#### Formatos admitidos
+
+- `CSV`
+- `XLSX`
+- `XLS`
+
+#### Importación simple
+
+Admite tablas con encabezados estándar, por ejemplo:
+
+```text
+Año
 COMPARSAS
 Preliminar 1
 Preliminar 2
@@ -81,13 +95,11 @@ Final 1
 Final 2
 ```
 
----
+#### Importación multihoja
 
-## Excel complejo (multihoja)
+También soporta libros de Excel con hojas por año, por ejemplo:
 
-El sistema detecta automáticamente archivos como:
-
-```
+```text
 COMPARSAS 2022
 COMPARSAS 2023
 COMPARSAS 2024
@@ -97,197 +109,243 @@ COMPARSAS 2026
 
 El importador:
 
-- detecta la **tabla real dentro de la hoja**
-- ignora bloques de resumen
-- ignora tablas estadísticas internas
-- extrae el **año desde el nombre de la hoja**
-- consolida todas las hojas en **una sola tabla**
+- detecta la tabla útil dentro de hojas complejas
+- intenta extraer el año desde el nombre de la hoja
+- ignora filas de resumen o bloques estadísticos no relevantes
+- consolida todas las hojas en una sola tabla final
+- normaliza encabezados irregulares
 
-También detecta encabezados irregulares.
+Ejemplo de alias detectado:
 
-Ejemplo:
-
+```text
+G -> Preliminar 1
 ```
-G → Preliminar 1
-```
+
+> **Importante:** al importar un archivo, el dataset actual se reemplaza por el contenido importado.
 
 ---
 
-# Tabla interactiva
+### 5) Normalización de modalidades discursivas
 
-La tabla permite:
+La app normaliza varias formas de entrada para unificar las modalidades y permitir análisis coherentes.
 
-- editar celdas directamente
-- eliminar comparsas
-- buscar comparsas
-- filtrar por texto
-- ordenar automáticamente
+Modalidades disponibles:
 
-Cada cambio se guarda automáticamente.
+- `Lírico`
+- `Narrativo`
+- `Reflexivo`
+- `Lírico / Narrativo`
+- `Lírico / Reflexivo`
+- `Narrativo / Reflexivo`
+- `Lírico / Narrativo / Reflexivo`
 
----
+También interpreta alias cortos o variantes en mayúsculas, por ejemplo:
 
-# Exportación
-
-Los datos pueden exportarse como:
-
-```
-CSV
-```
-
-Incluyendo:
-
-```
-Año
-Comparsa
-Fases del concurso
-Modalidad discursiva
-```
+- `L` → `Lírico`
+- `N` → `Narrativo`
+- `R` → `Reflexivo`
+- `L/N` → `Lírico / Narrativo`
 
 ---
 
-# Dashboard de análisis
+## Dashboard analítico
 
-La segunda pestaña muestra análisis automáticos.
+La pestaña **Dashboard** trabaja siempre sobre el **subconjunto filtrado actual**.
 
-## KPIs
+### KPIs incluidos
 
-- Número de comparsas
-- Número total de registros de fase
-- Comparsas que alcanzan la final
+- Comparsas filtradas
+- Registros de fase
+- Comparsas con final
 - Años detectados
+- Estado de filtro activo
 
----
+### Filtros disponibles
 
-## Gráficos incluidos
+- **Año**
+- **Fase máxima** alcanzada
+- **Modalidad presente**
+- **Tipo de enfoque**: puro o mixto
+- **Comparsa contiene**
 
-### Distribución discursiva
+### Gráficos incluidos
 
-Frecuencia total de:
+- **Distribución discursiva**
+- **Cobertura por fase**
+- **Avance máximo por comparsa**
+- **Tipo de enfoque**
+- **Comparsas por año**
 
-- Lírico
-- Narrativo
-- Reflexivo
-- combinaciones mixtas
+### Hallazgos automáticos
 
----
-
-### Cobertura por fase
-
-Número de comparsas que tienen datos en:
-
-- Preliminar
-- Cuartos
-- Semifinal
-- Final
-
----
-
-### Avance máximo
-
-Distribución de comparsas según la fase más alta alcanzada.
-
----
-
-### Enfoque puro vs mixto
-
-Comparación entre:
-
-- enfoques puros
-- enfoques mixtos
-
----
-
-### Comparsas por año
-
-Distribución del número de comparsas registradas por año.
-
----
-
-# Insights automáticos
-
-El sistema genera conclusiones automáticas como:
+El dashboard genera conclusiones dinámicas como:
 
 - modalidad más frecuente
-- fase con mayor número de registros
-- año con mayor número de comparsas
-- predominio de enfoques puros o mixtos
+- fase con más registros informados
+- año con más comparsas dentro del filtro
 - número de comparsas finalistas
+- predominio de enfoques puros o mixtos
+- comparsa con más fases informadas
 
 ---
 
-# Tecnologías utilizadas
+## IA local de Chrome
 
-- HTML
-- CSS
-- JavaScript
+La aplicación incorpora una sección para hacer preguntas sobre los datos mediante la **IA integrada de Chrome**.
 
-Bibliotecas externas:
+### Cómo funciona
 
-### Chart.js
+La consulta:
 
-Para generación de gráficos.
+1. toma el **dataset filtrado actual**
+2. lo convierte a JSON
+3. se lo pasa al modelo local del navegador
+4. obliga a responder con un JSON estructurado
 
-[https://www.chartjs.org/](https://www.chartjs.org/)
+La IA tiene instrucciones explícitas para:
 
-### SheetJS (XLSX)
+- usar **solo** los datos recibidos
+- no inventar información
+- indicar si la pregunta no se entiende
+- indicar si no hay base suficiente en el dataset
+- devolver evidencia textual breve cuando sí puede responder
 
-Para leer archivos Excel.
+### Estados de respuesta previstos
 
-[https://sheetjs.com/](https://sheetjs.com/)
+La interfaz contempla varios estados de compatibilidad del modelo local:
+
+- `available`
+- `downloading`
+- `downloadable`
+- `unavailable`
+- error de comprobación o de consulta
+
+### Tipos de respuesta de la IA
+
+La respuesta estructurada puede devolver:
+
+- `ok`
+- `no_entendido`
+- `sin_datos`
+
+### Casos de uso
+
+Ejemplos de preguntas:
+
+- `¿Qué modalidad aparece más en 2026?`
+- `¿Cuántas comparsas llegaron a la final?`
+- `¿Qué comparsa tiene más fases informadas?`
+
+> **Nota:** esta funcionalidad depende de un navegador Chrome compatible con la API de modelo local. Si el modelo no está disponible, se está descargando o el entorno no lo soporta, la app lo indicará en pantalla.
 
 ---
 
-# Estructura del proyecto
+## Tecnologías usadas
 
-Ejemplo mínimo:
+- **HTML5**
+- **CSS3**
+- **JavaScript vanilla**
+- **Chart.js** para visualización de gráficos
+- **SheetJS / XLSX** para lectura de archivos Excel
 
+Dependencias cargadas por CDN:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 ```
-project/
-│
-├── comparsas_form_dashboard_import_multisheet.html
+
+---
+
+## Estructura del proyecto
+
+```text
+.
+├── index.html
 └── README.md
 ```
 
-Todo el proyecto funciona dentro de **un único archivo HTML**.
+Todo el proyecto vive dentro de un único archivo HTML, lo que facilita:
+
+- compartirlo
+- ejecutarlo localmente
+- adaptarlo como prototipo
+- desplegarlo como página estática
 
 ---
 
-# Uso
+## Cómo usarlo
 
-1. Abrir el archivo HTML en el navegador.
-2. Importar un archivo Excel o CSV.
-3. Revisar los datos en la tabla.
-4. Editar o añadir nuevas comparsas.
-5. Abrir la pestaña **Dashboard** para ver el análisis.
-6. Exportar los datos si es necesario.
-
----
-
-# Requisitos
-
-- Navegador moderno
-- conexión a internet (para cargar Chart.js y SheetJS desde CDN)
+1. Abre `index.html` en tu navegador.
+2. Añade registros manualmente o importa un archivo `CSV`, `XLSX` o `XLS`.
+3. Revisa y corrige los datos desde la tabla.
+4. Usa la pestaña **Dashboard** para analizar el dataset.
+5. Aplica filtros para acotar el análisis.
+6. Haz preguntas en la sección de IA local de Chrome.
+7. Exporta el resultado a CSV si lo necesitas.
 
 ---
 
-# Posibles mejoras futuras
+## Requisitos
 
-- exportación directa a Excel
-- filtros por año en el dashboard
-- visualización de evolución temporal
-- clustering de estilos discursivos
-- exportación automática de informes
-- modo comparativo entre años
-- visualización de redes semánticas
+### Para la app base
+
+- navegador moderno
+- conexión a internet para cargar las librerías desde CDN
+
+### Para la IA local
+
+- una versión de Chrome compatible con la API de modelo local usada por la app
+- disponibilidad del modelo en el navegador
+- un contexto donde `LanguageModel` esté expuesto
 
 ---
 
-# Licencia
+## Limitaciones actuales
 
-Proyecto de uso libre para:
+- No hay backend ni sincronización entre dispositivos.
+- Los datos se guardan solo en el navegador actual.
+- La importación reemplaza el dataset cargado anteriormente.
+- La exportación disponible es solo a **CSV**.
+- La función de IA depende de compatibilidad real del navegador y del modelo local.
+- En datasets muy grandes, la consulta a la IA puede verse limitada por el tamaño del prompt enviado al modelo.
 
-- investigación
-- análisis cultural
-- estudios del carnaval
-- prototipado de herramientas de análisis discursivo
+---
+
+## Ideas de mejora
+
+- exportación a Excel
+- importación incremental en lugar de sobrescritura
+- comparación entre años
+- informes descargables
+- guardado de vistas filtradas
+- métricas más avanzadas por modalidad y fase
+- optimización de consultas IA para datasets grandes
+
+---
+
+## Público objetivo
+
+Este proyecto puede ser útil para:
+
+- investigación cultural
+- análisis del carnaval
+- proyectos docentes
+- prototipos de humanidades digitales
+- exploración local de datasets sin backend
+
+---
+
+## Créditos
+
+Este proyecto fue desarrollado con la colaboración de:
+
+Nando Muñoz & Javier Velázquez
+
+---
+
+## Licencia
+
+Proyecto de uso libre para investigación, análisis cultural, estudios del carnaval y prototipado.
+
+Si lo reutilizas o adaptas, es recomendable mantener una referencia al proyecto original o documentar claramente tus cambios.
